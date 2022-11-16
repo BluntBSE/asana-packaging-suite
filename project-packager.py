@@ -36,7 +36,6 @@ def AddTestTasksToWorksheet(tasks, sheet, workbook):
                 if qa_tag in task['tags']:
                     for ind, field in enumerate(task['custom_fields']):
 
-
                         if (field['name'] == 'Test Script Review Status'):
                             sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
                         ##Design Review Overwrites Test Script Review Status if it exists
@@ -107,10 +106,10 @@ def get_tasks_by_section(section_gid):
     section_name = client.sections.find_by_id(section_gid)['name']
     
     tasklist = []
-    tasks = client.tasks.get_tasks({'section':section_gid, 'completed_since':date.today(), 'opt_fields':['name', 'notes', 'tags', 'custom_fields', 'created_at']}, )
+    tasks = client.tasks.get_tasks({'section':section_gid, 'completed_since':date.today(), 'opt_fields':['name', 'notes', 'tags', 'custom_fields', 'created_at', 'memberships']}, )
     print(tasks)
     for task in tasks:
-        print("Appending " + section_name)
+        print("Appending from " + section_name)
         updated_task = task
         updated_task['section'] = section_name
         tasklist.append(task)
@@ -286,7 +285,9 @@ from credentials import token
 client = asana.Client.access_token(token)
 workspace = '15492006741476' ##MBTA Workspace
 
-##sample_task = client.tasks.find_by_id('1203367193397454')['custom_fields']['Design Review Comment Status']
+sample_task = client.tasks.find_by_id('1203367193397454')
+print(sample_task)
+print(sample_task.keys())
 
 start_input = ""
 print(logo_str)
