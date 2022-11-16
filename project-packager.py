@@ -9,7 +9,6 @@ logo_str = """
 ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
 """
 import sys
-
 import os
 import pandas
 import asana
@@ -28,23 +27,31 @@ def AddTestTasksToWorksheet(tasks, sheet, workbook):
     qa_tag = {'gid': '649069647070258', 'resource_type': 'tag'}
     hold_tag =  {'gid': '259956811260129', 'resource_type': 'tag'}
     rownum = 11
+    ##TODO RIGHT HERE: split off anything without 'ID Number' into its own list. Sort second list by name alphabetically. Remerge.
     for row, task in enumerate(tasks):
+            print(task['name'])
         ##OPYXL is 1-indexed. This should be the first row of the output spreadsheet you want to fill. TODO: Find the actual header and drop down one instead of writing '11'
-      
+        ##TODO BELOW: If ID number is missing and if there is a Design Review Comment Status, append that in column 10 instead of Test Script Review Status
             if hold_tag not in task['tags']:
                 if qa_tag in task['tags']:
                     for ind, field in enumerate(task['custom_fields']):
-                        print(field['name'])
-                        ##Add review status...
+
+
                         if (field['name'] == 'Test Script Review Status'):
-                         ##   print(task['custom_fields'][ind]['display_value'])
                             sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
+                        ##Design Review Overwrites Test Script Review Status if it exists
+                        if(field['name'] == 'Design Review Comment Status'):
+                            if(task['custom_fields'][ind]['display_value'] != None):
+                                sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'ID Number'):
                             sheet.cell(row = rownum, column = 5).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'Test Type'):
                             sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'Functional area'):
                             sheet.cell(row = rownum, column = 4).value = task['custom_fields'][ind]['display_value']
+                        ##If no functional area is defined, add the task seciton.
+                            if (task['custom_fields'][ind]['display_value'] == None):
+                                sheet.cell(row = rownum, column = 4).value = task['section']
                         if (field['name'] == 'Comment Tracking'):
                             sheet.cell(row = rownum, column = 3).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'Test Type'):
@@ -94,11 +101,6 @@ def AddStandardTasksToWorksheetNoLinks(tasks, sheet, workbook):
                     rownum = rownum + 1
             
             workbook.save('output.xlsm')
-
-
-   ## sheet.cell(rownum, column=11).value = task
-
-
 
 def get_tasks_by_section(section_gid):
     ##Get section name to append to each task....
@@ -250,6 +252,31 @@ def choose_sections_standard():
             print(section)
             print(display_section_name(section))
 
+def choose_test_project():
+    test_project_id = input("Please enter the ID of the test project (E.G: 'Test: System Website' is `1202257161854797` as extracted from https://app.asana.com/0/1202257161854797/list)")
+    general_gid = None
+    cases_gid = None
+    test_project_sections = client.sections.find_by_project(test_project_id)
+    for section in test_project_sections:
+        print(section)
+        if(section['name'] == 'General comments'):
+            if(general_gid != None):
+                print("WARNING! Multiple sections found with the name, 'General comments'. Quitting.")
+            general_gid = section['gid']
+        if(section['name'] == 'Test cases currently under review'):
+            if(cases_gid != None):
+                print("Warning! Multiple sections labeled 'Test cases under review'. Quitting.")
+                quit()
+            cases_gid = section['gid']
+    gen_tasklist = get_tasks_by_section(general_gid)
+
+    cases_tasklist = get_tasks_by_section(cases_gid)
+
+    total_tasklist = gen_tasklist + cases_tasklist
+    opyxl = define_workbook('test')
+    AddTestTasksToWorksheet(total_tasklist, opyxl['worksheet'], opyxl['workbook'])
+
+
 ##SIMPLE ASANA AUTHENTICATION##
 ##Headers to log in as Robert
 ##Put your token in a 'credentials.py' in the same directory as this script
@@ -259,6 +286,7 @@ from credentials import token
 client = asana.Client.access_token(token)
 workspace = '15492006741476' ##MBTA Workspace
 
+##sample_task = client.tasks.find_by_id('1203367193397454')['custom_fields']['Design Review Comment Status']
 
 start_input = ""
 print(logo_str)
@@ -271,6 +299,6 @@ while start_input != "quit":
         choose_sections_standard()
         break
     if start_input == "test":
-        print("Test version goes here")
+        choose_test_project()
         break
 
