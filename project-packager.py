@@ -16,10 +16,11 @@ import datetime
 import openpyxl
 from openpyxl import Workbook, load_workbook
 from datetime import date
-
+##TODO: Actually look into those deprecation warnings
 ##TODO: Standardize your capitalization and how you format functions
 ###FUNCTIONS###
-##TODO: ALPHABETIZE TEST TASKS AFTER GENERAL COMMENTS
+##TODO: ALPHABETIZE TEST TASKS AFTER GENERAL COMMENTS -- DONE I THINK
+##TODO: Delete unecessary tabs after tasks are done.
 def AddTestTasksToWorksheet(gen_tasks, test_tasks, sheet, workbook):
 ##QA COMPLETE TAG GID = 649069647070258
 ##HOLD TAG GID = 259956811260129
@@ -99,7 +100,6 @@ def AddTestTasksToWorksheet(gen_tasks, test_tasks, sheet, workbook):
                         
             workbook.save('output.xlsm')
 
-
 def AddStandardTasksToWorksheetNoLinks(tasks, sheet, workbook):
 ##QA COMPLETE TAG GID = 649069647070258
 ##HOLD TAG GID = 259956811260129
@@ -109,7 +109,44 @@ def AddStandardTasksToWorksheetNoLinks(tasks, sheet, workbook):
     rownum = 11
     for row, task in enumerate(tasks):
         ##OPYXL is 1-indexed. This should be the first row of the output spreadsheet you want to fill. TODO: Find the actual header and drop down one instead of writing '11'
-      
+            print(task['name'])
+            if hold_tag not in task['tags']:
+                if qa_tag in task['tags']:
+                    for ind, field in enumerate(task['custom_fields']):
+                        print(field['name'])
+                        ##Add review status...
+                        if (field['name'] == 'Comment Tracking'):
+                            sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'Submittal ID (CDRL number and section)'):
+                            sheet.cell(row = rownum, column = 5).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'MBTA Owner'):
+                            sheet.cell(row = rownum, column = 3).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'Design Review Comment Status'):
+                            sheet.cell(row = rownum, column = 11).value = task['custom_fields'][ind]['display_value']
+                    sheet.cell(row = rownum, column = 7).value = task['notes']
+                    sheet.cell(row = rownum, column = 6).value = task['name']
+                    sheet.cell(row = rownum, column = 4).value = task['section']
+                    time = task['created_at']
+                    split_time = time.split('T')[0]
+                    strip_time = datetime.datetime.strptime(split_time, "%Y-%m-%d")
+                    time_str = strip_time.strftime('%m/%d/%Y')
+                    print(time_str)
+
+                    sheet.cell(row = rownum, column = 8).value = time_str
+                    rownum = rownum + 1
+            
+            workbook.save('output.xlsm')
+##TODO: Finish with-links version
+def AddStandardTasksToWorksheetWithLinks(tasks, sheet, workbook):
+##QA COMPLETE TAG GID = 649069647070258
+##HOLD TAG GID = 259956811260129
+##STATUS COLUMN HEADER = OPYXL ROW 10, COLUMN 10 
+    qa_tag = {'gid': '649069647070258', 'resource_type': 'tag'}
+    hold_tag =  {'gid': '259956811260129', 'resource_type': 'tag'}
+    rownum = 11
+    for row, task in enumerate(tasks):
+        ##OPYXL is 1-indexed. This should be the first row of the output spreadsheet you want to fill. TODO: Find the actual header and drop down one instead of writing '11'
+            print(task['name'])
             if hold_tag not in task['tags']:
                 if qa_tag in task['tags']:
                     for ind, field in enumerate(task['custom_fields']):
@@ -246,7 +283,6 @@ def define_workbook(mode):
     if mode  == 'standard':
         print('stand')
 
-
 def choose_sections_standard():
     
     sections = []
@@ -265,7 +301,7 @@ def choose_sections_standard():
             print(el)
         if project_choice != "":
             break
-##546643571451005
+##Could make an index map to make this faster, but might not save this time. 
     
     print('Please enter a section gid. To quit, enter `quit`. To package, enter `package`\n')
     while section_choice != "quit":
@@ -306,11 +342,8 @@ def choose_test_project():
     gen_tasklist = get_tasks_by_section(general_gid)
 
     cases_tasklist = get_tasks_by_section(cases_gid)
+    ##Note to self learn about these lambda key sorts these are slick
     cases_tasklist.sort(key=lambda x: x['name'])
-    for el in cases_tasklist:
-        print(el['name'])
-
-    
     opyxl = define_workbook('test')
     AddTestTasksToWorksheet(gen_tasklist, cases_tasklist, opyxl['worksheet'], opyxl['workbook'])
 
