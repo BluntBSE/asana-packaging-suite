@@ -273,9 +273,4 @@ while start_input != "quit":
     if start_input == "test":
         print("Test version goes here")
         break
-    if start_input == "workbook":
-        opyxl = define_workbook('standard')
-        print(opyxl)
-        print(opyxl['workbook'])
-        print(opyxl['sheet'])
-        break
+
