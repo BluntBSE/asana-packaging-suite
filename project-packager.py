@@ -20,7 +20,7 @@ from datetime import date
 ##TODO: Standardize your capitalization and how you format functions
 ###FUNCTIONS###
 ##TODO: ALPHABETIZE TEST TASKS AFTER GENERAL COMMENTS
-def AddTestTasksToWorksheet(tasks, sheet, workbook):
+def AddTestTasksToWorksheet(gen_tasks, test_tasks, sheet, workbook):
 ##QA COMPLETE TAG GID = 649069647070258
 ##HOLD TAG GID = 259956811260129
 ##STATUS COLUMN HEADER = OPYXL ROW 10, COLUMN 10 
@@ -28,7 +28,7 @@ def AddTestTasksToWorksheet(tasks, sheet, workbook):
     hold_tag =  {'gid': '259956811260129', 'resource_type': 'tag'}
     rownum = 11
     ##TODO RIGHT HERE: split off anything without 'ID Number' into its own list. Sort second list by name alphabetically. Remerge.
-    for row, task in enumerate(tasks):
+    for row, task in enumerate(gen_tasks):
             print(task['name'])
         ##OPYXL is 1-indexed. This should be the first row of the output spreadsheet you want to fill. TODO: Find the actual header and drop down one instead of writing '11'
         ##TODO BELOW: If ID number is missing and if there is a Design Review Comment Status, append that in column 10 instead of Test Script Review Status
@@ -44,11 +44,14 @@ def AddTestTasksToWorksheet(tasks, sheet, workbook):
                                 sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'ID Number'):
                             sheet.cell(row = rownum, column = 5).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'Comment Tracking'):
+                            sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
+                            ##Test Type overrules comment tracking if present
                         if (field['name'] == 'Test Type'):
                             sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'Functional area'):
                             sheet.cell(row = rownum, column = 4).value = task['custom_fields'][ind]['display_value']
-                        ##If no functional area is defined, add the task seciton.
+                        ##If no functional area is defined, add the task section.
                             if (task['custom_fields'][ind]['display_value'] == None):
                                 sheet.cell(row = rownum, column = 4).value = task['section']
                         if (field['name'] == 'Comment Tracking'):
@@ -59,7 +62,41 @@ def AddTestTasksToWorksheet(tasks, sheet, workbook):
                     sheet.cell(row = rownum, column = 7).value = task['notes']
                     sheet.cell(row = rownum, column = 6).value = task['name']
                     rownum = rownum + 1
-            
+    for row, task in enumerate(test_tasks):
+            print(task['name'])
+        ##OPYXL is 1-indexed. This should be the first row of the output spreadsheet you want to fill. TODO: Find the actual header and drop down one instead of writing '11'
+        ##TODO BELOW: If ID number is missing and if there is a Design Review Comment Status, append that in column 10 instead of Test Script Review Status
+            if hold_tag not in task['tags']:
+                if qa_tag in task['tags']:
+                    for ind, field in enumerate(task['custom_fields']):
+
+                        if (field['name'] == 'Test Script Review Status'):
+                            sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
+                        ##Design Review Overwrites Test Script Review Status if it exists
+                        if(field['name'] == 'Design Review Comment Status'):
+                            if(task['custom_fields'][ind]['display_value'] != None):
+                                sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'ID Number'):
+                            sheet.cell(row = rownum, column = 5).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'Comment Tracking'):
+                            sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
+                            ##Test Type overrules comment tracking if present
+                        if (field['name'] == 'Test Type'):
+                            sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'Functional area'):
+                            sheet.cell(row = rownum, column = 4).value = task['custom_fields'][ind]['display_value']
+                        ##If no functional area is defined, add the task section.
+                            if (task['custom_fields'][ind]['display_value'] == None):
+                                sheet.cell(row = rownum, column = 4).value = task['section']
+                        if (field['name'] == 'Comment Tracking'):
+                            sheet.cell(row = rownum, column = 3).value = task['custom_fields'][ind]['display_value']
+                        if (field['name'] == 'Test Type'):
+                            sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
+
+                    sheet.cell(row = rownum, column = 7).value = task['notes']
+                    sheet.cell(row = rownum, column = 6).value = task['name']
+                    rownum = rownum + 1
+                        
             workbook.save('output.xlsm')
 
 
@@ -79,7 +116,6 @@ def AddStandardTasksToWorksheetNoLinks(tasks, sheet, workbook):
                         print(field['name'])
                         ##Add review status...
                         if (field['name'] == 'Comment Tracking'):
-                         ##   print(task['custom_fields'][ind]['display_value'])
                             sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'Submittal ID (CDRL number and section)'):
                             sheet.cell(row = rownum, column = 5).value = task['custom_fields'][ind]['display_value']
@@ -106,7 +142,7 @@ def get_tasks_by_section(section_gid):
     section_name = client.sections.find_by_id(section_gid)['name']
     
     tasklist = []
-    tasks = client.tasks.get_tasks({'section':section_gid, 'completed_since':date.today(), 'opt_fields':['name', 'notes', 'tags', 'custom_fields', 'created_at', 'memberships']}, )
+    tasks = client.tasks.get_tasks({'section':section_gid, 'completed_since':date.today(), 'opt_fields':['name', 'notes', 'tags', 'custom_fields', 'created_at', 'memberships','permalink_url']}, )
     print(tasks)
     for task in tasks:
         print("Appending from " + section_name)
@@ -270,10 +306,13 @@ def choose_test_project():
     gen_tasklist = get_tasks_by_section(general_gid)
 
     cases_tasklist = get_tasks_by_section(cases_gid)
+    cases_tasklist.sort(key=lambda x: x['name'])
+    for el in cases_tasklist:
+        print(el['name'])
 
-    total_tasklist = gen_tasklist + cases_tasklist
+    
     opyxl = define_workbook('test')
-    AddTestTasksToWorksheet(total_tasklist, opyxl['worksheet'], opyxl['workbook'])
+    AddTestTasksToWorksheet(gen_tasklist, cases_tasklist, opyxl['worksheet'], opyxl['workbook'])
 
 
 ##SIMPLE ASANA AUTHENTICATION##
