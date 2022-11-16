@@ -9,13 +9,10 @@ logo_str = """
 ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝     ╚═╝     ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
 """
 import sys
-import requests
+
 import os
 import pandas
-import numpy
 import asana
-import re ##Regex -- used for matching name string
-import json
 import datetime
 import openpyxl
 from openpyxl import Workbook, load_workbook
