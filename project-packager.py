@@ -250,18 +250,14 @@ def choose_sections_standard():
             print(section)
             print(display_section_name(section))
 
-##Put your token in a 'credentials.py' in the same directory as this script
-sys.path.append(os.path.relpath('.\credentials.py'))
-from credentials import token
-
 ##SIMPLE ASANA AUTHENTICATION##
 ##Headers to log in as Robert
-
+##Put your token in a 'credentials.py' in the same directory as this script
 ##Set token equal to a Personal Access Token
-
-
+sys.path.append(os.path.relpath('.\credentials.py'))
+from credentials import token
 client = asana.Client.access_token(token)
-workspace = '15492006741476'
+workspace = '15492006741476' ##MBTA Workspace
 
 
 start_input = ""
