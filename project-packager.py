@@ -45,9 +45,6 @@ def AddTestTasksToWorksheet(gen_tasks, test_tasks, sheet, workbook):
                                 sheet.cell(row = rownum, column = 10).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'ID Number'):
                             sheet.cell(row = rownum, column = 5).value = task['custom_fields'][ind]['display_value']
-                        if (field['name'] == 'Comment Tracking'):
-                            sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
-                            ##Test Type overrules comment tracking if present
                         if (field['name'] == 'Test Type'):
                             sheet.cell(row = rownum, column = 2).value = task['custom_fields'][ind]['display_value']
                         if (field['name'] == 'Functional area'):
@@ -177,9 +174,9 @@ def AddStandardTasksToWorksheetWithLinks(tasks, sheet, workbook):
 def get_tasks_by_section(section_gid):
     ##Get section name to append to each task....
     section_name = client.sections.find_by_id(section_gid)['name']
-    
+    ##TODO: FIX THE DATE.TODAY() bug
     tasklist = []
-    tasks = client.tasks.get_tasks({'section':section_gid, 'completed_since':date.today(), 'opt_fields':['name', 'notes', 'tags', 'custom_fields', 'created_at', 'memberships','permalink_url']}, )
+    tasks = client.tasks.get_tasks({'section':section_gid, 'completed_since':'now', 'opt_fields':['name', 'notes', 'tags', 'custom_fields', 'created_at', 'memberships','permalink_url']}, )
     print(tasks)
     for task in tasks:
         print("Appending from " + section_name)
@@ -358,8 +355,8 @@ client = asana.Client.access_token(token)
 workspace = '15492006741476' ##MBTA Workspace
 
 sample_task = client.tasks.find_by_id('1203367193397454')
-print(sample_task)
-print(sample_task.keys())
+##print(sample_task)
+##print(sample_task.keys())
 
 start_input = ""
 print(logo_str)
